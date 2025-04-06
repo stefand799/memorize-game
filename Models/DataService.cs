@@ -156,66 +156,78 @@ namespace MemorizeGame.Models
         }
         
         // Get image paths for a specific category
-// Updated method to ensure correct image paths
-        private string[] GetImagePathsForCategory(GameCategory category, int count)
+// Method to load images from the file system instead of resources
+private string[] GetImagePathsForCategory(GameCategory category, int count)
+{
+    string categoryFolder = category switch
+    {
+        GameCategory.Category1 => "albums",
+        GameCategory.Category2 => "category2",
+        GameCategory.Category3 => "category3",
+        _ => "albums"
+    };
+    
+    // Path to the cards directory
+    string basePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "images", "cards", categoryFolder);
+    
+    // Check if directory exists
+    if (!Directory.Exists(basePath))
+    {
+        Console.WriteLine($"Category directory not found: {basePath}");
+        // Fallback to Avalonia logo
+        string[] fallbackPaths = new string[count * 2];
+        for (int i = 0; i < fallbackPaths.Length; i++)
         {
-            string categoryFolder;
-    
-            switch (category)
-            {
-                case GameCategory.Category1:
-                    categoryFolder = "albums";
-                    break;
-                case GameCategory.Category2:
-                    categoryFolder = "category2";
-                    break;
-                case GameCategory.Category3:
-                    categoryFolder = "category3";
-                    break;
-                default:
-                    categoryFolder = "albums";
-                    break;
-            }
-    
-            // Get paths to images - use correct Avalonia resource format
-            string basePath = $"avares://MemorizeGame/Assets/images/cards/{categoryFolder}";
-            string baseFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "images", "cards", categoryFolder);
-    
-            List<string> availableImages = new List<string>();
-    
-            // Check if folder exists
-            if (Directory.Exists(baseFolder))
-            {
-                // Look for both jpg and png files
-                string[] jpgFiles = Directory.GetFiles(baseFolder, "album_*.jpg");
-                string[] pngFiles = Directory.GetFiles(baseFolder, "album_*.png");
-        
-                // Add all found images to our list with proper Avalonia resource path
-                foreach (var file in jpgFiles.Concat(pngFiles))
-                {
-                    string fileName = Path.GetFileName(file);
-                    availableImages.Add($"avares://MemorizeGame/Assets/images/cards/{categoryFolder}/{fileName}");
-                }
-            }
-    
-            // If we didn't find any images, use placeholders
-            if (availableImages.Count == 0)
-            {
-                for (int i = 1; i <= 18; i++)
-                {
-                    availableImages.Add("avares://MemorizeGame/Assets/avalonia-logo.ico");
-                }
-            }
-    
-            // Make sure we have enough images
-            List<string> result = new List<string>();
-            for (int i = 0; i < count; i++)
-            {
-                result.Add(availableImages[i % availableImages.Count]);
-            }
-    
-            return result.ToArray();
+            fallbackPaths[i] = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "avalonia-logo.ico");
         }
+        return fallbackPaths;
+    }
+    
+    // Get all image files with common image extensions
+    string[] imageFiles = Directory.GetFiles(basePath, "*.png")
+                                  .Concat(Directory.GetFiles(basePath, "*.jpg"))
+                                  .Concat(Directory.GetFiles(basePath, "*.jpeg"))
+                                  .ToArray();
+    
+    if (imageFiles.Length == 0)
+    {
+        Console.WriteLine($"No images found in category directory: {basePath}");
+        // Fallback to Avalonia logo
+        string[] fallbackPaths = new string[count * 2];
+        for (int i = 0; i < fallbackPaths.Length; i++)
+        {
+            fallbackPaths[i] = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "avalonia-logo.ico");
+        }
+        return fallbackPaths;
+    }
+    
+    // Make sure we have enough images for the cards
+    // We'll use modulo arithmetic to cycle through available images if we don't have enough
+    List<string> cardImagePaths = new List<string>();
+    for (int i = 0; i < count; i++)
+    {
+        int imageIndex = i % imageFiles.Length;
+        string imagePath = imageFiles[imageIndex];
+        
+        // Add each image twice (for pairs)
+        cardImagePaths.Add(imagePath);
+        cardImagePaths.Add(imagePath);
+    }
+    
+    // Shuffle the paths
+    Random rng = new Random();
+    int n = cardImagePaths.Count;
+    while (n > 1)
+    {
+        n--;
+        int k = rng.Next(n + 1);
+        string temp = cardImagePaths[k];
+        cardImagePaths[k] = cardImagePaths[n];
+        cardImagePaths[n] = temp;
+    }
+    
+    return cardImagePaths.ToArray();
+}
         
         // Update user statistics after game completion
         public async Task UpdateStatisticsAsync(string username, bool isWin)

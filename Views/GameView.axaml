@@ -126,21 +126,11 @@
                                     <Border IsVisible="{Binding IsFlipped}" Background="White" 
                                             CornerRadius="5" Padding="5" BorderBrush="Gray" 
                                             BorderThickness="1">
-                                        <Image Source="{Binding ImagePath}" 
+                                        <Image Source="{Binding CardImage}" 
                                                Stretch="Uniform"
                                                VerticalAlignment="Center"
                                                HorizontalAlignment="Center"/>
                                     </Border>
-            
-                                    <!-- Debug text to show when image fails to load -->
-                                    <TextBlock Text="{Binding ImagePath}" 
-                                               IsVisible="{Binding IsFlipped}" 
-                                               HorizontalAlignment="Center" 
-                                               VerticalAlignment="Bottom"
-                                               FontSize="8"
-                                               TextWrapping="Wrap"
-                                               MaxWidth="90"
-                                               Foreground="Red"/>
                                 </Panel>
                             </Button>
                         </DataTemplate>
