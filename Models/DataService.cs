@@ -156,11 +156,11 @@ namespace MemorizeGame.Models
         }
         
         // Get image paths for a specific category
+// Updated method to ensure correct image paths
         private string[] GetImagePathsForCategory(GameCategory category, int count)
         {
             string categoryFolder;
-            string baseFolder;
-            
+    
             switch (category)
             {
                 case GameCategory.Category1:
@@ -176,40 +176,44 @@ namespace MemorizeGame.Models
                     categoryFolder = "albums";
                     break;
             }
-            
-            // Get paths to images
-            baseFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "images", "cards", categoryFolder);
-            
+    
+            // Get paths to images - use correct Avalonia resource format
+            string basePath = $"avares://MemorizeGame/Assets/images/cards/{categoryFolder}";
+            string baseFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "images", "cards", categoryFolder);
+    
             List<string> availableImages = new List<string>();
-            
+    
             // Check if folder exists
             if (Directory.Exists(baseFolder))
             {
                 // Look for both jpg and png files
                 string[] jpgFiles = Directory.GetFiles(baseFolder, "album_*.jpg");
                 string[] pngFiles = Directory.GetFiles(baseFolder, "album_*.png");
-                
-                // Add all found images to our list
-                availableImages.AddRange(jpgFiles.Select(f => $"/Assets/images/cards/{categoryFolder}/{Path.GetFileName(f)}"));
-                availableImages.AddRange(pngFiles.Select(f => $"/Assets/images/cards/{categoryFolder}/{Path.GetFileName(f)}"));
+        
+                // Add all found images to our list with proper Avalonia resource path
+                foreach (var file in jpgFiles.Concat(pngFiles))
+                {
+                    string fileName = Path.GetFileName(file);
+                    availableImages.Add($"avares://MemorizeGame/Assets/images/cards/{categoryFolder}/{fileName}");
+                }
             }
-            
+    
             // If we didn't find any images, use placeholders
             if (availableImages.Count == 0)
             {
                 for (int i = 1; i <= 18; i++)
                 {
-                    availableImages.Add($"/Assets/avalonia-logo.ico");
+                    availableImages.Add("avares://MemorizeGame/Assets/avalonia-logo.ico");
                 }
             }
-            
+    
             // Make sure we have enough images
             List<string> result = new List<string>();
             for (int i = 0; i < count; i++)
             {
                 result.Add(availableImages[i % availableImages.Count]);
             }
-            
+    
             return result.ToArray();
         }
         
@@ -227,6 +231,42 @@ namespace MemorizeGame.Models
                     
                 await SaveAllUsersAsync(users);
             }
+        }
+        // Add this method to your DataService class
+        public string VerifyImagePaths()
+        {
+            List<string> diagnosticInfo = new List<string>();
+    
+            // Check base directories
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string assetsDir = Path.Combine(baseDir, "Assets");
+            string imagesDir = Path.Combine(assetsDir, "images");
+            string cardsDir = Path.Combine(imagesDir, "cards");
+            string albumsDir = Path.Combine(cardsDir, "albums");
+    
+            diagnosticInfo.Add($"Base directory exists: {Directory.Exists(baseDir)}");
+            diagnosticInfo.Add($"Assets directory exists: {Directory.Exists(assetsDir)}");
+            diagnosticInfo.Add($"Images directory exists: {Directory.Exists(imagesDir)}");
+            diagnosticInfo.Add($"Cards directory exists: {Directory.Exists(cardsDir)}");
+            diagnosticInfo.Add($"Albums directory exists: {Directory.Exists(albumsDir)}");
+    
+            // List all image files if albums directory exists
+            if (Directory.Exists(albumsDir))
+            {
+                string[] allFiles = Directory.GetFiles(albumsDir);
+                diagnosticInfo.Add($"Found {allFiles.Length} files in albums directory:");
+                foreach (var file in allFiles)
+                {
+                    diagnosticInfo.Add($"- {Path.GetFileName(file)}");
+                }
+            }
+    
+            // Check Avalonia resource format
+            // Note: This is a simple string check, not an actual resource validation
+            string avaloniaPath = "avares://MemorizeGame/Assets/images/cards/albums";
+            diagnosticInfo.Add($"Avalonia resource path format: {avaloniaPath}");
+    
+            return string.Join(Environment.NewLine, diagnosticInfo);
         }
     }
 }
