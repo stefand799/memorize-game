@@ -1,0 +1,141 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MemorizeGame.ViewModels"
+             xmlns:models="using:MemorizeGame.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="MemorizeGame.Views.LoginView"
+             x:DataType="vm:LoginViewModel">
+             
+    <Design.DataContext>
+        <vm:LoginViewModel/>
+    </Design.DataContext>
+    
+    <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Text="Memory Game" 
+                  FontSize="32" FontWeight="Bold" 
+                  HorizontalAlignment="Center" 
+                  Margin="0,20,0,30"/>
+        
+        <!-- Main Content -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" RowDefinitions="*">
+            <!-- Left side - Existing Users -->
+            <Border Grid.Column="0" 
+                   Margin="10" 
+                   BorderBrush="LightGray" 
+                   BorderThickness="1" 
+                   CornerRadius="5"
+                   Padding="20">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <TextBlock Grid.Row="0" 
+                              Text="Sign In" 
+                              FontSize="24" 
+                              HorizontalAlignment="Center" 
+                              Margin="0,0,0,20"/>
+                              
+                    <Grid Grid.Row="1" RowDefinitions="*,Auto,Auto">
+                        <!-- User list -->
+                        <ListBox Grid.Row="0" 
+                                Name="UserListBox" 
+                                ItemsSource="{Binding Users}" 
+                                SelectedItem="{Binding SelectedUser}"
+                                Margin="0,0,0,20">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="models:User">
+                                    <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+                                        <Image Grid.Column="0" 
+                                              Source="{Binding ImagePath, Mode=OneWay}" 
+                                              Width="40" 
+                                              Height="40" 
+                                              Margin="0,0,10,0"/>
+                                        <TextBlock Grid.Column="1" 
+                                                  Text="{Binding Username}" 
+                                                  VerticalAlignment="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        
+                        <!-- Action buttons -->
+                        <StackPanel Grid.Row="1" 
+                                   Orientation="Horizontal" 
+                                   HorizontalAlignment="Center" 
+                                   Spacing="10">
+                            <Button Content="Delete User" 
+                                   Command="{Binding DeleteUserCommand}" 
+                                   IsEnabled="{Binding IsUserSelected}"/>
+                            <Button Content="Play" 
+                                   Command="{Binding PlayCommand}" 
+                                   IsEnabled="{Binding IsUserSelected}"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+            
+            <!-- Right side - Create New User -->
+            <Border Grid.Column="1" 
+                   Margin="10" 
+                   BorderBrush="LightGray" 
+                   BorderThickness="1" 
+                   CornerRadius="5"
+                   Padding="20">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <TextBlock Grid.Row="0" 
+                              Text="Create Account" 
+                              FontSize="24" 
+                              HorizontalAlignment="Center" 
+                              Margin="0,0,0,20"/>
+                              
+                    <StackPanel Grid.Row="1" Spacing="15">
+                        <TextBox Watermark="Username" 
+                                Text="{Binding NewUsername}" 
+                                Margin="0,0,0,10"/>
+                                
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Button Content="Select Profile Image" 
+                                   Command="{Binding SelectImageCommand}"/>
+                            <TextBlock Text="{Binding SelectedImagePath}" 
+                                      VerticalAlignment="Center"/>
+                        </StackPanel>
+                        
+                        <!-- Show selected image -->
+                        <Border Width="120" 
+                               Height="120" 
+                               BorderBrush="Gray" 
+                               BorderThickness="1"
+                               HorizontalAlignment="Center">
+                            <Panel>
+                                <TextBlock Text="No image selected" 
+                                          IsVisible="{Binding !HasSelectedImage}" 
+                                          HorizontalAlignment="Center" 
+                                          VerticalAlignment="Center" 
+                                          Foreground="Gray"/>
+                                <Image Source="{Binding SelectedImagePath}" 
+                                      IsVisible="{Binding HasSelectedImage}" 
+                                      Stretch="Uniform"/>
+                            </Panel>
+                        </Border>
+                        
+                        <!-- Create account button -->
+                        <Button Content="Create Account" 
+                               Command="{Binding CreateAccountCommand}" 
+                               HorizontalAlignment="Center" 
+                               Margin="0,20,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+        
+        <!-- Footer -->
+        <StackPanel Grid.Row="2" 
+                   HorizontalAlignment="Center" 
+                   Orientation="Horizontal" 
+                   Margin="0,20,0,0">
+            <Button Content="Exit" 
+                   Command="{Binding ExitCommand}" 
+                   Width="100"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

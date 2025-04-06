@@ -1,0 +1,137 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:MemorizeGame.ViewModels"
+             xmlns:models="using:MemorizeGame.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="MemorizeGame.Views.GameView"
+             x:DataType="vm:GameViewModel">
+             
+    <UserControl.Resources>
+        <vm:EnumEqualsConverter x:Key="EnumEqualsConverter"/>
+    </UserControl.Resources>
+             
+    <Design.DataContext>
+        <vm:GameViewModel/>
+    </Design.DataContext>
+    
+    <Grid RowDefinitions="Auto,*">
+        <!-- Menu Bar -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="File">
+                <MenuItem Header="Category">
+                    <MenuItem Header="Category 1" Command="{Binding SetCategoryCommand}" CommandParameter="Category1" 
+                            IsChecked="{Binding CurrentCategory, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Category1}"/>
+                    <MenuItem Header="Category 2" Command="{Binding SetCategoryCommand}" CommandParameter="Category2"
+                            IsChecked="{Binding CurrentCategory, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Category2}"/>
+                    <MenuItem Header="Category 3" Command="{Binding SetCategoryCommand}" CommandParameter="Category3"
+                            IsChecked="{Binding CurrentCategory, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Category3}"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="New Game" Command="{Binding NewGameCommand}"/>
+                <MenuItem Header="Open Game" Command="{Binding OpenGameCommand}"/>
+                <MenuItem Header="Save Game" Command="{Binding SaveGameCommand}"/>
+                <Separator/>
+                <MenuItem Header="Statistics" Command="{Binding ShowStatisticsCommand}"/>
+                <Separator/>
+                <MenuItem Header="Exit" Command="{Binding ExitCommand}"/>
+            </MenuItem>
+            <MenuItem Header="Options">
+                <MenuItem Header="Standard (4x4)" Command="{Binding SetGameModeCommand}" CommandParameter="Standard"
+                        IsChecked="{Binding CurrentMode, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Standard}"/>
+                <MenuItem Header="Custom">
+                    <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto,Auto" Margin="10">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Rows:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding CustomRows}" Width="50"/>
+                        
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Columns:" VerticalAlignment="Center" Margin="10,0,5,0"/>
+                        <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding CustomColumns}" Width="50"/>
+                        
+                        <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" Text="Time (seconds):" Margin="0,10,0,5"/>
+                        <TextBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding GameTimeSeconds}" Width="80"/>
+                        
+                        <Button Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Content="Apply" 
+                                Command="{Binding SetCustomGameModeCommand}" Width="80" HorizontalAlignment="Right"/>
+                    </Grid>
+                </MenuItem>
+            </MenuItem>
+            <MenuItem Header="Help">
+                <MenuItem Header="About" Command="{Binding ShowAboutCommand}"/>
+            </MenuItem>
+        </Menu>
+        
+        <!-- Game content area -->
+        <Grid Grid.Row="1" Margin="20">
+            <!-- Show this when no game is active -->
+            <StackPanel IsVisible="{Binding !IsGameActive}" 
+                        VerticalAlignment="Center" 
+                        HorizontalAlignment="Center"
+                        Spacing="20">
+                <TextBlock Text="{Binding WelcomeMessage}" 
+                           HorizontalAlignment="Center" 
+                           FontSize="24"/>
+                <TextBlock Text="Select a category and game mode from the menu, then select 'New Game' to start playing" 
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           MaxWidth="500"
+                           FontSize="16"/>
+                <Button Content="New Game" 
+                        Command="{Binding NewGameCommand}" 
+                        HorizontalAlignment="Center" 
+                        Width="150" 
+                        Height="40"
+                        FontSize="16"
+                        Margin="0,20,0,0"/>
+            </StackPanel>
+            
+            <!-- Game board when game is active -->
+            <Grid IsVisible="{Binding IsGameActive}" RowDefinitions="Auto,*">
+                <!-- Game status bar -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10" Spacing="20">
+                    <TextBlock Text="{Binding GameStatusText}" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding TimeRemainingText}" VerticalAlignment="Center" Foreground="{Binding TimeRemainingColor}"/>
+                </StackPanel>
+                
+                <!-- Game board -->
+                <ItemsControl Grid.Row="1" 
+                             ItemsSource="{Binding Cards}"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             Name="CardItemsControl">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="{Binding GameRows}" Columns="{Binding GameColumns}"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:Card">
+                            <Button Command="{Binding #CardItemsControl.((vm:GameViewModel)DataContext).FlipCardCommand}"
+                                   CommandParameter="{Binding Id}"
+                                   IsEnabled="{Binding !IsMatched}"
+                                   Margin="5"
+                                   Width="80"
+                                   Height="120">
+                                <Panel>
+                                    <!-- Card back -->
+                                    <Rectangle Fill="#1E90FF" IsVisible="{Binding !IsFlipped}"/>
+                                    <TextBlock Text="?" IsVisible="{Binding !IsFlipped}" 
+                                              HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center"
+                                              FontSize="36" 
+                                              Foreground="White"/>
+                                              
+                                    <!-- Card front (image) -->
+                                    <Image Source="{Binding ImagePath}" 
+                                          IsVisible="{Binding IsFlipped}" 
+                                          Stretch="Uniform"
+                                          Margin="5"/>
+                                </Panel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>
