@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
@@ -8,6 +9,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MemorizeGame.Models;
@@ -22,6 +24,7 @@ namespace MemorizeGame.ViewModels
         private Timer? _gameTimer;
         private Game? _currentGame;
         private List<int> _flippedCardIds = new();
+        private bool _timerRunning = false;
 
         // Game configuration properties
         [ObservableProperty]
@@ -53,7 +56,8 @@ namespace MemorizeGame.ViewModels
         private ObservableCollection<Card> _cards = new();
 
         [ObservableProperty]
-        private int _timeRemaining;
+        [NotifyPropertyChangedFor(nameof(TimeRemainingText))]
+        private int _timeRemaining = 120; // Initialize with default time
 
         [ObservableProperty]
         private string _gameStatusText = "Ready to play";
@@ -80,6 +84,9 @@ namespace MemorizeGame.ViewModels
             _mainWindowViewModel = mainWindowViewModel;
             _dataService = dataService;
             _currentUser = currentUser;
+            
+            // Initialize with default time
+            TimeRemaining = GameTimeSeconds;
         }
 
         #region Commands
@@ -161,6 +168,9 @@ namespace MemorizeGame.ViewModels
 
             // Update elapsed time
             _currentGame.Configuration.ElapsedTime = _currentGame.Configuration.TotalTime - TimeRemaining;
+            
+            // Update the cards state in the game
+            _currentGame.Cards = Cards.ToList();
             
             // Save the game
             await _dataService.SaveGameAsync(_currentGame);
@@ -317,6 +327,9 @@ namespace MemorizeGame.ViewModels
             if (!IsGameActive)
                 return;
                 
+            // Debug line - useful to check if command is being triggered
+            Debug.WriteLine($"Flip card command triggered for card ID: {cardId}");
+            
             var cardToFlip = Cards.FirstOrDefault(c => c.Id == cardId);
             if (cardToFlip == null || cardToFlip.IsFlipped || cardToFlip.IsMatched)
                 return;
@@ -325,9 +338,12 @@ namespace MemorizeGame.ViewModels
             if (_flippedCardIds.Contains(cardId))
                 return;
                 
-            // Flip the card
+            // Flip the card - this should work now that Card implements INotifyPropertyChanged
             cardToFlip.IsFlipped = true;
             _flippedCardIds.Add(cardId);
+            
+            // Debug line
+            Debug.WriteLine($"Card {cardId} flipped. Current flipped cards: {string.Join(", ", _flippedCardIds)}");
             
             // Check if we need to process a pair
             if (_flippedCardIds.Count == 2)
@@ -362,16 +378,22 @@ namespace MemorizeGame.ViewModels
             // Generate card deck
             var newCards = _dataService.GenerateCardDeck(config, CurrentCategory);
             Cards = new ObservableCollection<Card>(newCards);
+            _currentGame.Cards = newCards;
             
             // Set up game state
             _flippedCardIds = new List<int>();
+            
+            // Explicitly ensure time is set correctly
             TimeRemaining = GameTimeSeconds;
             IsGameActive = true;
             GameStatusText = "Game started! Find matching pairs.";
             TimeRemainingColor = Brushes.Black;
             
-            // Start the timer
-            StartGameTimer();
+            // Debug information
+            Debug.WriteLine($"Starting new game with {Cards.Count} cards. Time: {TimeRemaining} seconds");
+            
+            // Start the timer after UI updates
+            Dispatcher.UIThread.Post(() => StartGameTimer());
         }
 
         private void LoadGame(Game game)
@@ -390,6 +412,8 @@ namespace MemorizeGame.ViewModels
             // Set up game state
             Cards = new ObservableCollection<Card>(game.Cards);
             _flippedCardIds = new List<int>();
+            
+            // Ensure time is set correctly from the saved game
             TimeRemaining = game.RemainingTime;
             IsGameActive = true;
             GameStatusText = "Saved game loaded! Continue finding matching pairs.";
@@ -398,13 +422,23 @@ namespace MemorizeGame.ViewModels
             UpdateTimeRemainingColor();
             
             // Start the timer
-            StartGameTimer();
+            Dispatcher.UIThread.Post(() => StartGameTimer());
         }
 
         private void StartGameTimer()
         {
+            // Only start if we don't already have a running timer
+            if (_timerRunning)
+                return;
+                
             _gameTimer = new Timer(1000);
             _gameTimer.Elapsed += OnGameTimerTick;
+            _gameTimer.AutoReset = true;
+            _timerRunning = true;
+            
+            // Debug line
+            Debug.WriteLine("Timer started");
+            
             _gameTimer.Start();
         }
 
@@ -416,14 +450,21 @@ namespace MemorizeGame.ViewModels
                 _gameTimer.Elapsed -= OnGameTimerTick;
                 _gameTimer.Dispose();
                 _gameTimer = null;
+                _timerRunning = false;
+                
+                // Debug line
+                Debug.WriteLine("Timer stopped");
             }
         }
 
         private void OnGameTimerTick(object? sender, ElapsedEventArgs e)
         {
             // Update on UI thread
-            Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            Dispatcher.UIThread.Post(() =>
             {
+                // Debug line - useful to see if timer is firing
+                Debug.WriteLine($"Timer tick - Current time: {TimeRemaining}");
+                
                 if (TimeRemaining > 0)
                 {
                     TimeRemaining--;
@@ -451,12 +492,17 @@ namespace MemorizeGame.ViewModels
 
         private void ProcessPair()
         {
+            if (_flippedCardIds.Count != 2)
+                return;
+                
             // Get the two flipped cards
             var card1 = Cards.First(c => c.Id == _flippedCardIds[0]);
             var card2 = Cards.First(c => c.Id == _flippedCardIds[1]);
             
-            // Check if they match (in a real implementation, we'd compare ImagePath)
-            bool isMatch = card1.ImagePath == card2.ImagePath;
+            // Check if they match by using PairId (much more reliable than comparing paths)
+            bool isMatch = card1.PairId == card2.PairId;
+            
+            Debug.WriteLine($"Checking pair: Card {card1.Id} (PairId: {card1.PairId}) and Card {card2.Id} (PairId: {card2.PairId}). Match: {isMatch}");
             
             if (isMatch)
             {
@@ -482,6 +528,8 @@ namespace MemorizeGame.ViewModels
 
         private void ScheduleUnflip()
         {
+            var cardsToUnflip = new List<int>(_flippedCardIds);
+            
             // In a real implementation, we'd use a proper timer with UI dispatch
             // For simplicity, we'll just create a task with a delay
             Task.Run(async () =>
@@ -489,13 +537,17 @@ namespace MemorizeGame.ViewModels
                 await Task.Delay(1000);
                 
                 // Update on UI thread
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                await Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     // Unflip the cards
-                    foreach (var id in _flippedCardIds)
+                    foreach (var id in cardsToUnflip)
                     {
-                        var card = Cards.First(c => c.Id == id);
-                        card.IsFlipped = false;
+                        var card = Cards.FirstOrDefault(c => c.Id == id);
+                        if (card != null)
+                        {
+                            card.IsFlipped = false;
+                            Debug.WriteLine($"Unflipping card {id}");
+                        }
                     }
                     
                     // Clear flipped cards
@@ -511,7 +563,10 @@ namespace MemorizeGame.ViewModels
             
             // Update game state
             IsGameActive = false;
-            _currentGame!.IsCompleted = true;
+            if (_currentGame != null)
+            {
+                _currentGame.IsCompleted = true;
+            }
             
             // Update status
             GameStatusText = isWin ? "Congratulations! You won!" : "Game over! You ran out of time.";
@@ -602,19 +657,19 @@ namespace MemorizeGame.ViewModels
                     Text = message,
                     TextWrapping = Avalonia.Media.TextWrapping.Wrap
                 });
-                
+
                 var okButton = new Button
                 {
                     Content = "OK",
                     HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
                     Margin = new Thickness(0, 10, 0, 0)
                 };
-                
+
                 okButton.Click += (s, e) => messageBox.Close();
                 panel.Children.Add(okButton);
-                
+
                 messageBox.Content = panel;
-                
+
                 await messageBox.ShowDialog(desktop.MainWindow);
             }
         }

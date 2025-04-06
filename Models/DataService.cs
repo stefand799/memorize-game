@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -70,9 +71,12 @@ namespace MemorizeGame.Models
             
             // Delete saved games
             string savedGamesPath = Path.Combine(GetAppDataPath(), SavedGamesFolder);
-            foreach (var file in Directory.GetFiles(savedGamesPath, $"{username}_*.json"))
+            if (Directory.Exists(savedGamesPath))
             {
-                File.Delete(file);
+                foreach (var file in Directory.GetFiles(savedGamesPath, $"{username}_*.json"))
+                {
+                    File.Delete(file);
+                }
             }
         }
         
@@ -129,9 +133,11 @@ namespace MemorizeGame.Models
             List<Card> cards = new List<Card>();
             for (int i = 0; i < pairsCount; i++)
             {
-                // Add two cards with the same image (a pair)
-                cards.Add(new Card(i * 2, imagePaths[i]));
-                cards.Add(new Card(i * 2 + 1, imagePaths[i]));
+                int pairId = i; // Use as identifier for pair
+                
+                // Create two cards with the same image but different IDs
+                cards.Add(new Card(i * 2, imagePaths[i], pairId));
+                cards.Add(new Card(i * 2 + 1, imagePaths[i], pairId));
             }
             
             // Shuffle the cards
@@ -149,28 +155,62 @@ namespace MemorizeGame.Models
             return cards;
         }
         
-        // This would be implemented to return actual image paths based on your folder structure
+        // Get image paths for a specific category
         private string[] GetImagePathsForCategory(GameCategory category, int count)
         {
-            // This is a placeholder - you'd implement this to return actual image paths
-            // based on the selected category from your assets folder
-            string categoryFolder = category switch
-            {
-                GameCategory.Category1 => "category1",
-                GameCategory.Category2 => "category2",
-                GameCategory.Category3 => "category3",
-                _ => "category1"
-            };
+            string categoryFolder;
+            string baseFolder;
             
-            // This method would scan the appropriate asset folder and return image paths
-            // For now just returning placeholder paths
-            string[] result = new string[count];
-            for (int i = 0; i < count; i++)
+            switch (category)
             {
-                result[i] = $"/Assets/{categoryFolder}/image{i}.png";
+                case GameCategory.Category1:
+                    categoryFolder = "albums";
+                    break;
+                case GameCategory.Category2:
+                    categoryFolder = "category2";
+                    break;
+                case GameCategory.Category3:
+                    categoryFolder = "category3";
+                    break;
+                default:
+                    categoryFolder = "albums";
+                    break;
             }
             
-            return result;
+            // Get paths to images
+            baseFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "images", "cards", categoryFolder);
+            
+            List<string> availableImages = new List<string>();
+            
+            // Check if folder exists
+            if (Directory.Exists(baseFolder))
+            {
+                // Look for both jpg and png files
+                string[] jpgFiles = Directory.GetFiles(baseFolder, "album_*.jpg");
+                string[] pngFiles = Directory.GetFiles(baseFolder, "album_*.png");
+                
+                // Add all found images to our list
+                availableImages.AddRange(jpgFiles.Select(f => $"/Assets/images/cards/{categoryFolder}/{Path.GetFileName(f)}"));
+                availableImages.AddRange(pngFiles.Select(f => $"/Assets/images/cards/{categoryFolder}/{Path.GetFileName(f)}"));
+            }
+            
+            // If we didn't find any images, use placeholders
+            if (availableImages.Count == 0)
+            {
+                for (int i = 1; i <= 18; i++)
+                {
+                    availableImages.Add($"/Assets/avalonia-logo.ico");
+                }
+            }
+            
+            // Make sure we have enough images
+            List<string> result = new List<string>();
+            for (int i = 0; i < count; i++)
+            {
+                result.Add(availableImages[i % availableImages.Count]);
+            }
+            
+            return result.ToArray();
         }
         
         // Update user statistics after game completion

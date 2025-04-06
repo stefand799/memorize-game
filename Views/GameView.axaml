@@ -21,7 +21,7 @@
         <Menu Grid.Row="0">
             <MenuItem Header="File">
                 <MenuItem Header="Category">
-                    <MenuItem Header="Category 1" Command="{Binding SetCategoryCommand}" CommandParameter="Category1" 
+                    <MenuItem Header="Albums" Command="{Binding SetCategoryCommand}" CommandParameter="Category1" 
                             IsChecked="{Binding CurrentCategory, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Category1}"/>
                     <MenuItem Header="Category 2" Command="{Binding SetCategoryCommand}" CommandParameter="Category2"
                             IsChecked="{Binding CurrentCategory, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Category2}"/>
@@ -110,22 +110,25 @@
                                    CommandParameter="{Binding Id}"
                                    IsEnabled="{Binding !IsMatched}"
                                    Margin="5"
-                                   Width="80"
-                                   Height="120">
+                                   Width="100"
+                                   Height="140">
                                 <Panel>
                                     <!-- Card back -->
-                                    <Rectangle Fill="#1E90FF" IsVisible="{Binding !IsFlipped}"/>
+                                    <Rectangle Fill="#1E90FF" IsVisible="{Binding !IsFlipped}" RadiusX="5" RadiusY="5"/>
                                     <TextBlock Text="?" IsVisible="{Binding !IsFlipped}" 
                                               HorizontalAlignment="Center" 
                                               VerticalAlignment="Center"
                                               FontSize="36" 
+                                              FontWeight="Bold"
                                               Foreground="White"/>
                                               
                                     <!-- Card front (image) -->
-                                    <Image Source="{Binding ImagePath}" 
-                                          IsVisible="{Binding IsFlipped}" 
-                                          Stretch="Uniform"
-                                          Margin="5"/>
+                                    <Border IsVisible="{Binding IsFlipped}" Background="White" 
+                                           CornerRadius="5" Padding="5" BorderBrush="Gray" 
+                                           BorderThickness="1">
+                                        <Image Source="{Binding ImagePath}" 
+                                              Stretch="Uniform"/>
+                                    </Border>
                                 </Panel>
                             </Button>
                         </DataTemplate>

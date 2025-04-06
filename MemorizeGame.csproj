@@ -9,7 +9,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <AvaloniaResource Include="Assets\**"/>
+        <AvaloniaResource Include="Assets\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="Assets\images\cards\albums\**" />
+        <AvaloniaResource Include="Assets\images\cards\albums\**" />
     </ItemGroup>
 
     <ItemGroup>

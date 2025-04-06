@@ -19,16 +19,18 @@ namespace MemorizeGame.ViewModels
 
         // For user list
         [ObservableProperty]
-        private ObservableCollection<User> _users = new();
+        [NotifyPropertyChangedFor(nameof(IsUserSelected))]
+        private User? _selectedUser;
 
         [ObservableProperty]
-        private User? _selectedUser;
+        private ObservableCollection<User> _users = new();
 
         // For creating new user
         [ObservableProperty]
         private string _newUsername = string.Empty;
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasSelectedImage))]
         private string _selectedImagePath = string.Empty;
 
         // Derived properties
