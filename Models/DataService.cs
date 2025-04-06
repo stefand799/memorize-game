@@ -15,17 +15,17 @@ namespace MemorizeGame.Models
         // Returns the application data directory path
         private string GetAppDataPath()
         {
-            string appDataPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "MemorizeGame");
-                
-            if (!Directory.Exists(appDataPath))
-                Directory.CreateDirectory(appDataPath);
-                
-            if (!Directory.Exists(Path.Combine(appDataPath, SavedGamesFolder)))
-                Directory.CreateDirectory(Path.Combine(appDataPath, SavedGamesFolder));
-                
-            return appDataPath;
+            // Get the directory where the executable is located
+            string appPath = AppDomain.CurrentDomain.BaseDirectory;
+            string dataPath = Path.Combine(appPath, "GameData");
+    
+            if (!Directory.Exists(dataPath))
+                Directory.CreateDirectory(dataPath);
+        
+            if (!Directory.Exists(Path.Combine(dataPath, SavedGamesFolder)))
+                Directory.CreateDirectory(Path.Combine(dataPath, SavedGamesFolder));
+        
+            return dataPath;
         }
         
         // User management methods
