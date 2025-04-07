@@ -13,6 +13,8 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MemorizeGame.Models;
+using System.Threading;
+using Timer = System.Timers.Timer;
 
 namespace MemorizeGame.ViewModels
 {
@@ -25,6 +27,9 @@ namespace MemorizeGame.ViewModels
         private Game? _currentGame;
         private List<int> _flippedCardIds = new();
         private bool _timerRunning = false;
+        private bool _isProcessingPair = false;
+        private CancellationTokenSource? _unflipCancellationSource;
+
 
         // Game configuration properties
         [ObservableProperty]
@@ -324,27 +329,32 @@ namespace MemorizeGame.ViewModels
         [RelayCommand]
         private void FlipCard(int cardId)
         {
-            if (!IsGameActive)
+            // Don't allow flipping if game isn't active or we're in the middle of processing a pair
+            if (!IsGameActive || _isProcessingPair)
                 return;
-                
-            // Debug line - useful to check if command is being triggered
+        
+            // Debug line
             Debug.WriteLine($"Flip card command triggered for card ID: {cardId}");
-            
+    
             var cardToFlip = Cards.FirstOrDefault(c => c.Id == cardId);
             if (cardToFlip == null || cardToFlip.IsFlipped || cardToFlip.IsMatched)
                 return;
-                
+        
             // Don't allow selecting the same card twice
             if (_flippedCardIds.Contains(cardId))
                 return;
-                
-            // Flip the card - this should work now that Card implements INotifyPropertyChanged
+    
+            // Don't allow more than 2 cards to be flipped at once
+            if (_flippedCardIds.Count >= 2)
+                return;
+        
+            // Flip the card
             cardToFlip.IsFlipped = true;
             _flippedCardIds.Add(cardId);
-            
+    
             // Debug line
             Debug.WriteLine($"Card {cardId} flipped. Current flipped cards: {string.Join(", ", _flippedCardIds)}");
-            
+    
             // Check if we need to process a pair
             if (_flippedCardIds.Count == 2)
             {
@@ -360,7 +370,7 @@ namespace MemorizeGame.ViewModels
         {
             // Stop any existing timer
             StopGameTimer();
-            
+    
             // Configure new game
             var config = new GameConfiguration
             {
@@ -371,27 +381,28 @@ namespace MemorizeGame.ViewModels
                 TotalTime = GameTimeSeconds,
                 ElapsedTime = 0
             };
-            
+    
             // Create new game instance
             _currentGame = new Game(_currentUser.Username, config);
-            
+    
             // Generate card deck
             var newCards = _dataService.GenerateCardDeck(config, CurrentCategory);
             Cards = new ObservableCollection<Card>(newCards);
             _currentGame.Cards = newCards;
-            
+    
             // Set up game state
             _flippedCardIds = new List<int>();
-            
+            _isProcessingPair = false; // Reset processing flag
+    
             // Explicitly ensure time is set correctly
             TimeRemaining = GameTimeSeconds;
             IsGameActive = true;
             GameStatusText = "Game started! Find matching pairs.";
             TimeRemainingColor = Brushes.Black;
-            
+    
             // Debug information
             Debug.WriteLine($"Starting new game with {Cards.Count} cards. Time: {TimeRemaining} seconds");
-            
+    
             // Start the timer after UI updates
             Dispatcher.UIThread.Post(() => StartGameTimer());
         }
@@ -451,7 +462,14 @@ namespace MemorizeGame.ViewModels
                 _gameTimer.Dispose();
                 _gameTimer = null;
                 _timerRunning = false;
-                
+        
+                // Cancel any pending unflip operations
+                _unflipCancellationSource?.Cancel();
+                _unflipCancellationSource = null;
+        
+                // Reset processing flag
+                _isProcessingPair = false;
+        
                 // Debug line
                 Debug.WriteLine("Timer stopped");
             }
@@ -494,25 +512,31 @@ namespace MemorizeGame.ViewModels
         {
             if (_flippedCardIds.Count != 2)
                 return;
-                
+    
+            // Set processing flag to prevent new cards from being selected
+            _isProcessingPair = true;
+        
             // Get the two flipped cards
             var card1 = Cards.First(c => c.Id == _flippedCardIds[0]);
             var card2 = Cards.First(c => c.Id == _flippedCardIds[1]);
-            
-            // Check if they match by using PairId (much more reliable than comparing paths)
+    
+            // Check if they match by using PairId
             bool isMatch = card1.PairId == card2.PairId;
-            
+    
             Debug.WriteLine($"Checking pair: Card {card1.Id} (PairId: {card1.PairId}) and Card {card2.Id} (PairId: {card2.PairId}). Match: {isMatch}");
-            
+    
             if (isMatch)
             {
                 // Mark as matched
                 card1.IsMatched = true;
                 card2.IsMatched = true;
-                
-                // Clear flipped cards
+        
+                // Clear flipped cards list
                 _flippedCardIds.Clear();
-                
+        
+                // Allow new cards to be selected again
+                _isProcessingPair = false;
+        
                 // Check if all cards are matched
                 if (Cards.All(c => c.IsMatched))
                 {
@@ -525,36 +549,55 @@ namespace MemorizeGame.ViewModels
                 ScheduleUnflip();
             }
         }
-
         private void ScheduleUnflip()
         {
+            // Cancel any previous unflip operation that might be pending
+            _unflipCancellationSource?.Cancel();
+            _unflipCancellationSource = new CancellationTokenSource();
+            var token = _unflipCancellationSource.Token;
+    
+            // Keep a local copy of the flipped card IDs
             var cardsToUnflip = new List<int>(_flippedCardIds);
-            
-            // In a real implementation, we'd use a proper timer with UI dispatch
-            // For simplicity, we'll just create a task with a delay
+    
             Task.Run(async () =>
             {
-                await Task.Delay(1000);
-                
-                // Update on UI thread
-                await Dispatcher.UIThread.InvokeAsync(() =>
+                try
                 {
-                    // Unflip the cards
-                    foreach (var id in cardsToUnflip)
+                    // Wait a moment so player can see the cards
+                    await Task.Delay(1000, token);
+            
+                    // Update on UI thread
+                    await Dispatcher.UIThread.InvokeAsync(() =>
                     {
-                        var card = Cards.FirstOrDefault(c => c.Id == id);
-                        if (card != null)
+                        if (token.IsCancellationRequested)
+                            return;
+                
+                        // Unflip the cards
+                        foreach (var id in cardsToUnflip)
                         {
-                            card.IsFlipped = false;
-                            Debug.WriteLine($"Unflipping card {id}");
+                            var card = Cards.FirstOrDefault(c => c.Id == id);
+                            if (card != null)
+                            {
+                                card.IsFlipped = false;
+                                Debug.WriteLine($"Unflipping card {id}");
+                            }
                         }
-                    }
-                    
-                    // Clear flipped cards
-                    _flippedCardIds.Clear();
-                });
+                
+                        // Clear flipped cards list
+                        _flippedCardIds.Clear();
+                
+                        // Allow selecting new cards again
+                        _isProcessingPair = false;
+                    });
+                }
+                catch (TaskCanceledException)
+                {
+                    // Task was canceled, that's fine
+                    Debug.WriteLine("Unflip task was canceled");
+                }
             });
         }
+
 
         private async void EndGame(bool isWin)
         {

@@ -156,78 +156,70 @@ namespace MemorizeGame.Models
         }
         
         // Get image paths for a specific category
-// Method to load images from the file system instead of resources
-private string[] GetImagePathsForCategory(GameCategory category, int count)
-{
-    string categoryFolder = category switch
-    {
-        GameCategory.Category1 => "albums",
-        GameCategory.Category2 => "category2",
-        GameCategory.Category3 => "category3",
-        _ => "albums"
-    };
-    
-    // Path to the cards directory
-    string basePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "images", "cards", categoryFolder);
-    
-    // Check if directory exists
-    if (!Directory.Exists(basePath))
-    {
-        Console.WriteLine($"Category directory not found: {basePath}");
-        // Fallback to Avalonia logo
-        string[] fallbackPaths = new string[count * 2];
-        for (int i = 0; i < fallbackPaths.Length; i++)
+        private string[] GetImagePathsForCategory(GameCategory category, int pairsCount)
         {
-            fallbackPaths[i] = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "avalonia-logo.ico");
+            string categoryFolder = category switch
+            {
+                GameCategory.Category1 => "albums",
+                GameCategory.Category2 => "monsters",
+                GameCategory.Category3 => "category3",
+                _ => "albums"
+            };
+            
+            // Path to the cards directory
+            string basePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "images", "cards", categoryFolder);
+            
+            // Check if directory exists
+            if (!Directory.Exists(basePath))
+            {
+                Console.WriteLine($"Category directory not found: {basePath}");
+                // Fallback to Avalonia logo
+                string[] fallbackPaths = new string[pairsCount];
+                for (int i = 0; i < fallbackPaths.Length; i++)
+                {
+                    fallbackPaths[i] = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "avalonia-logo.ico");
+                }
+                return fallbackPaths;
+            }
+            
+            // Get all image files with common image extensions
+            string[] imageFiles = Directory.GetFiles(basePath, "*.png")
+                                          .Concat(Directory.GetFiles(basePath, "*.jpg"))
+                                          .Concat(Directory.GetFiles(basePath, "*.jpeg"))
+                                          .ToArray();
+            
+            if (imageFiles.Length == 0)
+            {
+                Console.WriteLine($"No images found in category directory: {basePath}");
+                // Fallback to Avalonia logo
+                string[] fallbackPaths = new string[pairsCount];
+                for (int i = 0; i < fallbackPaths.Length; i++)
+                {
+                    fallbackPaths[i] = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "avalonia-logo.ico");
+                }
+                return fallbackPaths;
+            }
+            
+            // Verify we have enough unique images for each pair
+            if (imageFiles.Length < pairsCount)
+            {
+                Console.WriteLine($"Warning: Not enough unique images in category. Need {pairsCount} but found {imageFiles.Length}.");
+                // Use the images we have and cycle through them if necessary
+                string[] selectedPaths = new string[pairsCount];
+                for (int i = 0; i < pairsCount; i++)
+                {
+                    selectedPaths[i] = imageFiles[i % imageFiles.Length];
+                }
+                return selectedPaths;
+            }
+            
+            // Shuffle the available images
+            Random rng = new Random();
+            string[] shuffledImages = imageFiles.OrderBy(x => rng.Next()).ToArray();
+            
+            // Take just the number of unique images we need for pairs
+            return shuffledImages.Take(pairsCount).ToArray();
         }
-        return fallbackPaths;
-    }
-    
-    // Get all image files with common image extensions
-    string[] imageFiles = Directory.GetFiles(basePath, "*.png")
-                                  .Concat(Directory.GetFiles(basePath, "*.jpg"))
-                                  .Concat(Directory.GetFiles(basePath, "*.jpeg"))
-                                  .ToArray();
-    
-    if (imageFiles.Length == 0)
-    {
-        Console.WriteLine($"No images found in category directory: {basePath}");
-        // Fallback to Avalonia logo
-        string[] fallbackPaths = new string[count * 2];
-        for (int i = 0; i < fallbackPaths.Length; i++)
-        {
-            fallbackPaths[i] = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "avalonia-logo.ico");
-        }
-        return fallbackPaths;
-    }
-    
-    // Make sure we have enough images for the cards
-    // We'll use modulo arithmetic to cycle through available images if we don't have enough
-    List<string> cardImagePaths = new List<string>();
-    for (int i = 0; i < count; i++)
-    {
-        int imageIndex = i % imageFiles.Length;
-        string imagePath = imageFiles[imageIndex];
-        
-        // Add each image twice (for pairs)
-        cardImagePaths.Add(imagePath);
-        cardImagePaths.Add(imagePath);
-    }
-    
-    // Shuffle the paths
-    Random rng = new Random();
-    int n = cardImagePaths.Count;
-    while (n > 1)
-    {
-        n--;
-        int k = rng.Next(n + 1);
-        string temp = cardImagePaths[k];
-        cardImagePaths[k] = cardImagePaths[n];
-        cardImagePaths[n] = temp;
-    }
-    
-    return cardImagePaths.ToArray();
-}
         
         // Update user statistics after game completion
         public async Task UpdateStatisticsAsync(string username, bool isWin)

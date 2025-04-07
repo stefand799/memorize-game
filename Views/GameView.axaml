@@ -23,7 +23,7 @@
                 <MenuItem Header="Category">
                     <MenuItem Header="Albums" Command="{Binding SetCategoryCommand}" CommandParameter="Category1" 
                             IsChecked="{Binding CurrentCategory, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Category1}"/>
-                    <MenuItem Header="Category 2" Command="{Binding SetCategoryCommand}" CommandParameter="Category2"
+                    <MenuItem Header="Monsters" Command="{Binding SetCategoryCommand}" CommandParameter="Category2"
                             IsChecked="{Binding CurrentCategory, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Category2}"/>
                     <MenuItem Header="Category 3" Command="{Binding SetCategoryCommand}" CommandParameter="Category3"
                             IsChecked="{Binding CurrentCategory, Converter={StaticResource EnumEqualsConverter}, ConverterParameter=Category3}"/>
