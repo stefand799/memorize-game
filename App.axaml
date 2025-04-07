@@ -2,8 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="MemorizeGame.App"
              xmlns:local="using:MemorizeGame"
-             RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             xmlns:styles="using:MemorizeGame.Styles"
+             RequestedThemeVariant="Dark">
+    <!-- Changed to "Dark" theme variant -->
 
     <Application.DataTemplates>
         <local:ViewLocator/>
@@ -11,5 +12,7 @@
   
     <Application.Styles>
         <FluentTheme />
+        <!-- Add our custom dark theme resources -->
+        <styles:DarkTheme/>
     </Application.Styles>
 </Application>

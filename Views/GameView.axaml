@@ -111,10 +111,13 @@
                                     IsEnabled="{Binding !IsMatched}"
                                     Margin="5"
                                     Width="100"
-                                    Height="100">
+                                    Height="100"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderThickness="0">
                                 <Panel>
                                     <!-- Card back -->
-                                    <Rectangle Fill="#1E90FF" IsVisible="{Binding !IsFlipped}" RadiusX="5" RadiusY="5"/>
+                                    <Rectangle Fill="{StaticResource CardBackBrush}" IsVisible="{Binding !IsFlipped}" RadiusX="5" RadiusY="5"/>
                                     <TextBlock Text="?" IsVisible="{Binding !IsFlipped}" 
                                                HorizontalAlignment="Center" 
                                                VerticalAlignment="Center"
@@ -123,8 +126,10 @@
                                                Foreground="White"/>
                       
                                     <!-- Card front (image) -->
-                                    <Border IsVisible="{Binding IsFlipped}" Background="White" 
-                                            CornerRadius="5" Padding="5" BorderBrush="Gray" 
+                                    <Border IsVisible="{Binding IsFlipped}" 
+                                            Background="{StaticResource LightBackgroundBrush}" 
+                                            CornerRadius="5" Padding="5" 
+                                            BorderBrush="{StaticResource BorderBrush}" 
                                             BorderThickness="1">
                                         <Image Source="{Binding CardImage}" 
                                                Stretch="Uniform"

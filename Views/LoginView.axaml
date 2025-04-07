@@ -24,9 +24,10 @@
             <!-- Left side - Existing Users -->
             <Border Grid.Column="0" 
                    Margin="10" 
-                   BorderBrush="LightGray" 
+                   BorderBrush="{StaticResource BorderBrush}" 
                    BorderThickness="1" 
                    CornerRadius="5"
+                   Background="{StaticResource MediumBackgroundBrush}"
                    Padding="20">
                 <Grid RowDefinitions="Auto,*,Auto">
                     <TextBlock Grid.Row="0" 
@@ -77,9 +78,10 @@
             <!-- Right side - Create New User -->
             <Border Grid.Column="1" 
                    Margin="10" 
-                   BorderBrush="LightGray" 
+                   BorderBrush="{StaticResource BorderBrush}" 
                    BorderThickness="1" 
                    CornerRadius="5"
+                   Background="{StaticResource MediumBackgroundBrush}"
                    Padding="20">
                 <Grid RowDefinitions="Auto,*,Auto">
                     <TextBlock Grid.Row="0" 
@@ -103,15 +105,16 @@
                         <!-- Show selected image -->
                         <Border Width="120" 
                                Height="120" 
-                               BorderBrush="Gray" 
+                               BorderBrush="{StaticResource BorderBrush}" 
                                BorderThickness="1"
+                               Background="{StaticResource LightBackgroundBrush}"
                                HorizontalAlignment="Center">
                             <Panel>
                                 <TextBlock Text="No image selected" 
                                           IsVisible="{Binding !HasSelectedImage}" 
                                           HorizontalAlignment="Center" 
                                           VerticalAlignment="Center" 
-                                          Foreground="Gray"/>
+                                          Foreground="{StaticResource SecondaryTextBrush}"/>
                                 <Image Source="{Binding SelectedImagePath}" 
                                       IsVisible="{Binding HasSelectedImage}" 
                                       Stretch="Uniform"/>

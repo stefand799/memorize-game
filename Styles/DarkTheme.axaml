@@ -1,0 +1,90 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="MemorizeGame.Styles.DarkTheme">
+
+    <Styles.Resources>
+        <!-- Gray Dark Theme Colors -->
+        <Color x:Key="DarkBackgroundColor">#2D2D2D</Color>
+        <Color x:Key="MediumBackgroundColor">#3D3D3D</Color>
+        <Color x:Key="LightBackgroundColor">#4D4D4D</Color>
+        <Color x:Key="CardBackColor">#1976D2</Color> <!-- Blue for card backs -->
+        <Color x:Key="TextColor">#E0E0E0</Color>
+        <Color x:Key="SecondaryTextColor">#B0B0B0</Color>
+        <Color x:Key="BorderColor">#5D5D5D</Color>
+        <Color x:Key="AccentColor">#5294E2</Color>
+        
+        <!-- Brushes -->
+        <SolidColorBrush x:Key="DarkBackgroundBrush" Color="{StaticResource DarkBackgroundColor}"/>
+        <SolidColorBrush x:Key="MediumBackgroundBrush" Color="{StaticResource MediumBackgroundColor}"/>
+        <SolidColorBrush x:Key="LightBackgroundBrush" Color="{StaticResource LightBackgroundColor}"/>
+        <SolidColorBrush x:Key="CardBackBrush" Color="{StaticResource CardBackColor}"/>
+        <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}"/>
+        <SolidColorBrush x:Key="SecondaryTextBrush" Color="{StaticResource SecondaryTextColor}"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
+    </Styles.Resources>
+    
+    <!-- Control Style Overrides -->
+    <Style Selector="Window">
+        <Setter Property="Background" Value="{StaticResource DarkBackgroundBrush}"/>
+    </Style>
+    
+    <Style Selector="UserControl">
+        <Setter Property="Background" Value="{StaticResource DarkBackgroundBrush}"/>
+    </Style>
+    
+    <Style Selector="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    </Style>
+    
+    <Style Selector="Button">
+        <Setter Property="Background" Value="{StaticResource MediumBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+    </Style>
+    
+    <Style Selector="Button:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource LightBackgroundBrush}"/>
+        <Setter Property="TextBlock.Foreground" Value="{StaticResource TextBrush}"/>
+    </Style>
+    
+    <Style Selector="TextBox">
+        <Setter Property="Background" Value="{StaticResource MediumBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="CaretBrush" Value="{StaticResource TextBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+    </Style>
+    
+    <Style Selector="ListBox">
+        <Setter Property="Background" Value="{StaticResource MediumBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+    </Style>
+    
+    <Style Selector="ListBoxItem">
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        <Setter Property="Padding" Value="4"/>
+    </Style>
+
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+    </Style>
+    
+    <Style Selector="Border.card">
+        <Setter Property="Background" Value="{StaticResource MediumBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+    </Style>
+    
+    <Style Selector="Menu">
+        <Setter Property="Background" Value="{StaticResource DarkBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    </Style>
+    
+    <Style Selector="MenuItem">
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+    </Style>
+    
+    <Style Selector="MenuItem:selected /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+    </Style>
+</Styles>
