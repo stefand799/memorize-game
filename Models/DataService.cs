@@ -226,51 +226,15 @@ namespace MemorizeGame.Models
         {
             var users = await GetAllUsersAsync();
             var user = users.Find(u => u.Username == username);
-            
+
             if (user != null)
             {
                 user.GamesPlayed++;
                 if (isWin)
                     user.GamesWon++;
-                    
+
                 await SaveAllUsersAsync(users);
             }
-        }
-        // Add this method to your DataService class
-        public string VerifyImagePaths()
-        {
-            List<string> diagnosticInfo = new List<string>();
-    
-            // Check base directories
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string assetsDir = Path.Combine(baseDir, "Assets");
-            string imagesDir = Path.Combine(assetsDir, "images");
-            string cardsDir = Path.Combine(imagesDir, "cards");
-            string albumsDir = Path.Combine(cardsDir, "albums");
-    
-            diagnosticInfo.Add($"Base directory exists: {Directory.Exists(baseDir)}");
-            diagnosticInfo.Add($"Assets directory exists: {Directory.Exists(assetsDir)}");
-            diagnosticInfo.Add($"Images directory exists: {Directory.Exists(imagesDir)}");
-            diagnosticInfo.Add($"Cards directory exists: {Directory.Exists(cardsDir)}");
-            diagnosticInfo.Add($"Albums directory exists: {Directory.Exists(albumsDir)}");
-    
-            // List all image files if albums directory exists
-            if (Directory.Exists(albumsDir))
-            {
-                string[] allFiles = Directory.GetFiles(albumsDir);
-                diagnosticInfo.Add($"Found {allFiles.Length} files in albums directory:");
-                foreach (var file in allFiles)
-                {
-                    diagnosticInfo.Add($"- {Path.GetFileName(file)}");
-                }
-            }
-    
-            // Check Avalonia resource format
-            // Note: This is a simple string check, not an actual resource validation
-            string avaloniaPath = "avares://MemorizeGame/Assets/images/cards/albums";
-            diagnosticInfo.Add($"Avalonia resource path format: {avaloniaPath}");
-    
-            return string.Join(Environment.NewLine, diagnosticInfo);
         }
     }
 }

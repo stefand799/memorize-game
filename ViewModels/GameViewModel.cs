@@ -549,6 +549,7 @@ namespace MemorizeGame.ViewModels
                 ScheduleUnflip();
             }
         }
+        
         private void ScheduleUnflip()
         {
             // Cancel any previous unflip operation that might be pending
@@ -597,8 +598,7 @@ namespace MemorizeGame.ViewModels
                 }
             });
         }
-
-
+        
         private async void EndGame(bool isWin)
         {
             // Stop the timer
