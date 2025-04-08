@@ -7,11 +7,11 @@
         <Color x:Key="DarkBackgroundColor">#2D2D2D</Color>
         <Color x:Key="MediumBackgroundColor">#3D3D3D</Color>
         <Color x:Key="LightBackgroundColor">#4D4D4D</Color>
-        <Color x:Key="CardBackColor">#1976D2</Color> <!-- Blue for card backs -->
+        <Color x:Key="CardBackColor">Crimson</Color> <!-- Blue for card backs -->
         <Color x:Key="TextColor">#E0E0E0</Color>
         <Color x:Key="SecondaryTextColor">#B0B0B0</Color>
         <Color x:Key="BorderColor">#5D5D5D</Color>
-        <Color x:Key="AccentColor">#5294E2</Color>
+        <Color x:Key="AccentColor">Red</Color>
         
         <!-- Brushes -->
         <SolidColorBrush x:Key="DarkBackgroundBrush" Color="{StaticResource DarkBackgroundColor}"/>

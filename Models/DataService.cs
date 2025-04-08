@@ -304,7 +304,7 @@ namespace MemorizeGame.Models
             {
                 GameCategory.Category1 => "albums",
                 GameCategory.Category2 => "monsters",
-                GameCategory.Category3 => "category3",
+                GameCategory.Category3 => "cats",
                 _ => "albums"
             };
             
