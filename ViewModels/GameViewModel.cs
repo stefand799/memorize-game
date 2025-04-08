@@ -147,20 +147,46 @@ namespace MemorizeGame.ViewModels
         }
 
         [RelayCommand]
-        private async Task OpenGame()
+private async Task OpenGame()
+{
+    Debug.WriteLine($"Attempting to open saved game for user: {_currentUser?.Username}");
+    
+    if (_currentUser == null)
+    {
+        Debug.WriteLine("Current user is null, cannot load game");
+        await ShowErrorAsync("No user is currently logged in.");
+        return;
+    }
+    
+    try
+    {
+        Debug.WriteLine("Calling GetSavedGamesForUserAsync");
+        var savedGames = await _dataService.GetSavedGamesForUserAsync(_currentUser.Username);
+        Debug.WriteLine($"Found {savedGames.Count} saved games");
+        
+        if (savedGames.Count == 0)
         {
-            var savedGames = await _dataService.GetSavedGamesForUserAsync(_currentUser.Username);
-            if (savedGames.Count == 0)
-            {
-                await ShowErrorAsync("No saved games found.");
-                return;
-            }
-
-            // Ideally, we'd show a proper dialog to select a saved game
-            // For simplicity, we'll just load the most recent saved game
-            var mostRecentGame = savedGames.OrderByDescending(g => g.SavedAt).First();
-            LoadGame(mostRecentGame);
+            Debug.WriteLine("No saved games found");
+            await ShowErrorAsync("No saved games found for this user.");
+            return;
         }
+
+        // Ideally, we'd show a proper dialog to select a saved game
+        // For simplicity, we'll just load the most recent saved game
+        Debug.WriteLine("Finding most recent saved game");
+        var mostRecentGame = savedGames.OrderByDescending(g => g.SavedAt).First();
+        Debug.WriteLine($"Most recent game saved at: {mostRecentGame.SavedAt}");
+        
+        // Load the game
+        LoadGame(mostRecentGame);
+    }
+    catch (Exception ex)
+    {
+        Debug.WriteLine($"Error in OpenGame: {ex.Message}");
+        Debug.WriteLine(ex.ToString());
+        await ShowErrorAsync($"Failed to load game: {ex.Message}");
+    }
+}
 
         [RelayCommand]
         private async Task SaveGame()
@@ -408,33 +434,63 @@ namespace MemorizeGame.ViewModels
         }
 
         private void LoadGame(Game game)
+{
+    Debug.WriteLine("Starting LoadGame method");
+    
+    try
+    {
+        // Stop any existing timer
+        StopGameTimer();
+        
+        // Load game configuration
+        _currentGame = game;
+        CurrentCategory = game.Configuration.Category;
+        CurrentMode = game.Configuration.Mode;
+        GameRows = game.Configuration.Rows;
+        GameColumns = game.Configuration.Columns;
+        GameTimeSeconds = game.Configuration.TotalTime;
+        
+        Debug.WriteLine($"Game configuration loaded - Rows: {GameRows}, Columns: {GameColumns}, Category: {CurrentCategory}");
+        
+        // Debug info about the cards
+        Debug.WriteLine($"Game has {game.Cards.Count} cards");
+        foreach (var card in game.Cards)
         {
-            // Stop any existing timer
-            StopGameTimer();
+            Debug.WriteLine($"Card {card.Id} - PairId: {card.PairId}, IsFlipped: {card.IsFlipped}, IsMatched: {card.IsMatched}, ImagePath: {card.ImagePath}");
             
-            // Load game configuration
-            _currentGame = game;
-            CurrentCategory = game.Configuration.Category;
-            CurrentMode = game.Configuration.Mode;
-            GameRows = game.Configuration.Rows;
-            GameColumns = game.Configuration.Columns;
-            GameTimeSeconds = game.Configuration.TotalTime;
-            
-            // Set up game state
-            Cards = new ObservableCollection<Card>(game.Cards);
-            _flippedCardIds = new List<int>();
-            
-            // Ensure time is set correctly from the saved game
-            TimeRemaining = game.RemainingTime;
-            IsGameActive = true;
-            GameStatusText = "Saved game loaded! Continue finding matching pairs.";
-            
-            // Update time color if needed
-            UpdateTimeRemainingColor();
-            
-            // Start the timer
-            Dispatcher.UIThread.Post(() => StartGameTimer());
+            // Make sure images are reloaded
+            card.ReloadImage();
         }
+        
+        // Set up game state
+        Cards = new ObservableCollection<Card>(game.Cards);
+        _flippedCardIds = new List<int>();
+        
+        // Ensure time is set correctly from the saved game
+        TimeRemaining = game.RemainingTime;
+        IsGameActive = true;
+        GameStatusText = "Saved game loaded! Continue finding matching pairs.";
+        
+        Debug.WriteLine($"Game loaded with {Cards.Count} cards. Time remaining: {TimeRemaining} seconds");
+        
+        // Update time color if needed
+        UpdateTimeRemainingColor();
+        
+        // Start the timer
+        Dispatcher.UIThread.Post(() => StartGameTimer());
+    }
+    catch (Exception ex)
+    {
+        Debug.WriteLine($"Error in LoadGame: {ex.Message}");
+        Debug.WriteLine(ex.ToString());
+        
+        // Show error but continue
+        Dispatcher.UIThread.Post(async () => 
+        {
+            await ShowErrorAsync($"Error loading game: {ex.Message}");
+        });
+    }
+}
 
         private void StartGameTimer()
         {

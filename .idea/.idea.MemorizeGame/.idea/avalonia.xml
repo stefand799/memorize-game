@@ -3,6 +3,7 @@
   <component name="AvaloniaProject">
     <option name="projectPerEditor">
       <map>
+        <entry key="App.axaml" value="MemorizeGame.csproj" />
         <entry key="Styles/DarkTheme.axaml" value="MemorizeGame.csproj" />
         <entry key="Views/GameView.axaml" value="MemorizeGame.csproj" />
         <entry key="Views/LoginView.axaml" value="MemorizeGame.csproj" />
