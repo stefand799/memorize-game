@@ -3,9 +3,11 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MemorizeGame.Models;
@@ -33,9 +35,17 @@ namespace MemorizeGame.ViewModels
         [NotifyPropertyChangedFor(nameof(HasSelectedImage))]
         private string _selectedImagePath = string.Empty;
 
+        // Profile images in Assets/images/profile
+        [ObservableProperty]
+        private ObservableCollection<Models.ProfileImageItem> _profileImages = new();
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasSelectedImage))]
+        private Models.ProfileImageItem? _selectedProfileImage;
+
         // Derived properties
         public bool IsUserSelected => SelectedUser != null;
-        public bool HasSelectedImage => !string.IsNullOrEmpty(SelectedImagePath);
+        public bool HasSelectedImage => SelectedProfileImage != null;
 
         // Default constructor for design-time
         public LoginViewModel()
@@ -43,6 +53,9 @@ namespace MemorizeGame.ViewModels
             // Design-time constructor
             _mainWindowViewModel = new MainWindowViewModel();
             _dataService = new DataService();
+            
+            // Load profile images for design time
+            LoadProfileImagesAsync().ConfigureAwait(false);
         }
 
         // Runtime constructor
@@ -51,39 +64,88 @@ namespace MemorizeGame.ViewModels
             _mainWindowViewModel = mainWindowViewModel;
             _dataService = dataService;
 
-            // Load users when view model is created
+            // Load users and profile images when view model is created
             _ = LoadUsersAsync();
+            _ = LoadProfileImagesAsync();
         }
 
-        // Command to select a profile image
-        [RelayCommand]
-        private async Task SelectImage()
+        // Load profile images from Assets/images/profile directory
+        private async Task LoadProfileImagesAsync()
         {
-            var dialog = new OpenFileDialog
+            try
             {
-                Title = "Select Profile Image",
-                AllowMultiple = false,
-                Filters = new System.Collections.Generic.List<FileDialogFilter>
+                // Path to profile images directory
+                string profileImagesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "images", "profile");
+                
+                // Check if directory exists
+                if (!Directory.Exists(profileImagesPath))
                 {
-                    new FileDialogFilter
+                    System.Diagnostics.Debug.WriteLine($"Profile images directory not found: {profileImagesPath}");
+                    return;
+                }
+                
+                // Get all image files
+                var imageFiles = Directory.GetFiles(profileImagesPath, "*.png")
+                                         .Concat(Directory.GetFiles(profileImagesPath, "*.jpg"))
+                                         .Concat(Directory.GetFiles(profileImagesPath, "*.jpeg"))
+                                         .ToArray();
+                
+                System.Diagnostics.Debug.WriteLine($"Found {imageFiles.Length} profile images");
+                
+                // Create profile image items
+                var profileImagesList = new ObservableCollection<Models.ProfileImageItem>();
+                
+                foreach (var imagePath in imageFiles)
+                {
+                    try
                     {
-                        Name = "Image Files",
-                        Extensions = new System.Collections.Generic.List<string> { "jpg", "jpeg", "png", "gif" }
+                        var filename = Path.GetFileName(imagePath);
+                        var item = new Models.ProfileImageItem
+                        {
+                            ImagePath = imagePath,
+                            DisplayName = filename
+                        };
+                        
+                        // Load the bitmap
+                        item.LoadImage();
+                        
+                        profileImagesList.Add(item);
+                        System.Diagnostics.Debug.WriteLine($"Added profile image: {imagePath}");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error loading profile image {imagePath}: {ex.Message}");
                     }
                 }
-            };
-
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            {
-                var result = await dialog.ShowAsync(desktop.MainWindow);
-                if (result?.Length > 0)
+                
+                // Update the collection on UI thread
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                 {
-                    SelectedImagePath = result[0];
-                }
+                    ProfileImages = profileImagesList;
+                    
+                    // Select first image by default if available
+                    if (ProfileImages.Count > 0)
+                        SelectedProfileImage = ProfileImages[0];
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading profile images: {ex.Message}");
             }
         }
 
-        // Command to create a new user account
+        // Add this method to LoginViewModel.cs to clear the form after creating a user
+
+        private void ClearForm()
+        {
+            NewUsername = string.Empty;
+    
+            // Don't clear SelectedProfileImage to keep the current selection
+            // This provides a better UX as users often create multiple accounts with the same avatar
+        }
+
+// Then update the CreateAccount method to use this:
+
         [RelayCommand]
         private async Task CreateAccount()
         {
@@ -93,7 +155,7 @@ namespace MemorizeGame.ViewModels
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(SelectedImagePath))
+            if (SelectedProfileImage == null)
             {
                 await ShowErrorAsync("Please select a profile image.");
                 return;
@@ -107,15 +169,14 @@ namespace MemorizeGame.ViewModels
             }
 
             // Create and save new user
-            var newUser = new User(NewUsername, SelectedImagePath);
+            var newUser = new User(NewUsername, SelectedProfileImage.ImagePath);
             await _dataService.SaveUserAsync(newUser);
 
             // Refresh user list
             await LoadUsersAsync();
 
             // Clear form
-            NewUsername = string.Empty;
-            SelectedImagePath = string.Empty;
+            ClearForm();
         }
 
         // Command to play as selected user
@@ -197,10 +258,25 @@ namespace MemorizeGame.ViewModels
             }
         }
 
+        // Command to select a profile image
+        [RelayCommand]
+        private void SelectProfileImage(Models.ProfileImageItem imageItem)
+        {
+            SelectedProfileImage = imageItem;
+            SelectedImagePath = imageItem.ImagePath;
+        }
+
         // Load users from data service
         private async Task LoadUsersAsync()
         {
             var userList = await _dataService.GetAllUsersAsync();
+            
+            // Reload images for all users
+            foreach (var user in userList)
+            {
+                user.ReloadImage();
+            }
+            
             Users = new ObservableCollection<User>(userList);
         }
 
@@ -243,4 +319,6 @@ namespace MemorizeGame.ViewModels
             }
         }
     }
+
+    // ProfileImageItem is now moved to Models/ProfileImageItem.cs
 }

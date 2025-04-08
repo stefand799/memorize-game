@@ -47,22 +47,31 @@ namespace MemorizeGame.Models
         }
         
         // User management methods
+        // Update this method in DataService.cs
+
         public async Task<List<User>> GetAllUsersAsync()
         {
             string filePath = Path.Combine(GetAppDataPath(), UsersFileName);
             Debug.WriteLine($"Loading users from: {filePath}");
-            
+    
             if (!File.Exists(filePath))
             {
                 Debug.WriteLine("Users file does not exist, returning empty list.");
                 return new List<User>();
             }
-                
+        
             try
             {
                 string json = await File.ReadAllTextAsync(filePath);
                 var users = JsonSerializer.Deserialize<List<User>>(json, _jsonOptions) ?? new List<User>();
                 Debug.WriteLine($"Loaded {users.Count} users");
+        
+                // Reload images for all users
+                foreach (var user in users)
+                {
+                    user.ReloadImage();
+                }
+        
                 return users;
             }
             catch (Exception ex)
